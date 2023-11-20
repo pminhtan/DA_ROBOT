@@ -1,0 +1,17 @@
+main.c:152:7:UART_Handle	4
+main.c:217:7:UartIdle_Init	1
+main.c:222:7:HAL_UARTEx_RxEventCallback	2
+main.c:231:6:HAL_TIM_PeriodElapsedCallback	5
+main.c:264:5:main	1
+main.c:341:6:SystemClock_Config	3
+main.c:388:13:MX_TIM1_Init	3
+main.c:438:13:MX_TIM2_Init	3
+main.c:487:13:MX_TIM3_Init	3
+main.c:536:13:MX_TIM4_Init	9
+main.c:607:13:MX_TIM5_Init	3
+main.c:656:13:MX_TIM8_Init	8
+main.c:735:13:MX_TIM9_Init	6
+main.c:791:13:MX_USART3_UART_Init	2
+main.c:822:13:MX_DMA_Init	1
+main.c:840:13:MX_GPIO_Init	1
+main.c:884:6:Error_Handler	1
