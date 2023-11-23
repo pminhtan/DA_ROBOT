@@ -15,7 +15,7 @@ void MOTOR_setPIDPosition(MOTOR_t* motor, float Kp, float Ki, float Kd, float Ts
 }
 void MOTOR_setOutputRange(MOTOR_t* motor, float OutMin, float OutMax)
 {
-    PID_setOutputRange(&motor->PIDPosition, -200, 200);
+    PID_setOutputRange(&motor->PIDPosition, -500, 500);
     PID_setOutputRange(&motor->PIDVelocity, OutMin, OutMax);
 }
 void MOTOR_setWindupRange(MOTOR_t* motor, float OutMin, float OutMax)
@@ -37,12 +37,13 @@ void MOTOR_runAngle(MOTOR_t* motor)
     }
     MOTOR_driver_readPosAndSpeed(motor->motorDriver, &motor->pos, &motor->speed, motor->PIDPosition.Sample_time);
     motor->error = motor->setPoint - motor->pos;
+//    motor->error = motor->setPoint;
 
     // PD+PI controller
     PID_compute(&motor->PIDPosition, motor->error);  // tinh PD
     PID_compute(&motor->PIDVelocity, motor->PIDPosition.Output - motor->speed); // tinh PI
 
-    if (fabs(motor->pos) < 1500)
+    if (fabs(motor->pos) < motor->limitPos)
     {
         MOTOR_driver_rotary(motor->motorDriver, motor->PIDVelocity.Output);
     }
@@ -51,7 +52,7 @@ void MOTOR_runAngle(MOTOR_t* motor)
         MOTOR_driver_rotary(motor->motorDriver, 0);
     }
 }
-void MOTOR_init(MOTOR_t* motor, MOTOR_DRIVER_t *motorDriver,float ratio, uint16_t pinSetHome)
+void MOTOR_init(MOTOR_t* motor, MOTOR_DRIVER_t *motorDriver,float ratio, uint16_t pinSetHome, float limitPos)
 {
     motor->ratioJoint = ratio;
     motor->pinSetHome = 0;
@@ -62,6 +63,9 @@ void MOTOR_init(MOTOR_t* motor, MOTOR_DRIVER_t *motorDriver,float ratio, uint16_
     motor->pos = 0;
     motor->speed = 0;
     motor->motorDriver = motorDriver;
+    motor->limitPos = limitPos * motor->ratioJoint;
+    MOTOR_driver_setupPWM(motor->motorDriver, motor->motorDriver->htimPWM, motor->motorDriver->PWM_CH1, motor->motorDriver->PWM_CH2);
+    MOTOR_driver_setupENCODER(motor->motorDriver, motor->motorDriver->htimENC, motor->motorDriver->ENC_CH1, motor->motorDriver->ENC_CH2);
 }
 void MOTOR_reset(MOTOR_t* motor)
 {

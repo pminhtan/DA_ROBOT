@@ -15,8 +15,8 @@
   *
   ******************************************************************************
   */
-  /* USER CODE END Header */
-  /* Includes ------------------------------------------------------------------*/
+/* USER CODE END Header */
+/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -60,73 +60,73 @@ char uartLogBuffer[MAX_MESG];
 uint8_t flag_uart_rx = 0;
 uint16_t uartLogRxSize;
 float t1, t2, t3, t4;
-
-MOTOR_DRIVER_t driver1;
-MOTOR_DRIVER_t driver2;
-MOTOR_DRIVER_t driver3;
-MOTOR_DRIVER_t driver4;
+uint8_t Pin_interrupt = 0;
+//MOTOR_DRIVER_t driver1;
+//MOTOR_DRIVER_t driver2;
+//MOTOR_DRIVER_t driver3;
+//MOTOR_DRIVER_t driver4;
 
 MOTOR_t motor1;
 MOTOR_t motor2;
 MOTOR_t motor3;
 MOTOR_t motor4;
 
-// driver1 = {
-//  .htimPWM = &htim8,
-//  .htimENC = &htim1,
-//  .EncCount = 0,
-//  .PWM_CH1 = TIM_CHANNEL_3,
-//  .PWM_CH2 = TIM_CHANNEL_4,
-//  .ENC_CH1 = TIM_CHANNEL_1,
-//  .ENC_CH2 = TIM_CHANNEL_2,
-//  .speed = 0,
-//  .pos = 0,
-//  .preSpeed = 0,
-//  .prePos = 0,
-//  .ratio = 33
-// };
-//driver2 = {
-//  .htimPWM = &htim4,
-//  .htimENC = &htim2,
-//  .EncCount = 0,
-//  .PWM_CH1 = TIM_CHANNEL_3,
-//  .PWM_CH2 = TIM_CHANNEL_4,
-//  .ENC_CH1 = TIM_CHANNEL_1,
-//  .ENC_CH2 = TIM_CHANNEL_2,
-//  .speed = 0,
-//  .pos = 0,
-//  .preSpeed = 0,
-//  .prePos = 0,
-//  .ratio = 33
-//};
-//driver3 = {
-//  .htimPWM = &htim4,
-//  .htimENC = &htim3,
-//  .EncCount = 0,
-//  .PWM_CH1 = TIM_CHANNEL_1,
-//  .PWM_CH2 = TIM_CHANNEL_2,
-//  .ENC_CH1 = TIM_CHANNEL_1,
-//  .ENC_CH2 = TIM_CHANNEL_2,
-//  .speed = 0,
-//  .pos = 0,
-//  .preSpeed = 0,
-//  .prePos = 0,
-//  .ratio = 33
-//};
-//driver4 = {
-//  .htimPWM = &htim9,
-//  .htimENC = &htim5,
-//  .EncCount = 0,
-//  .PWM_CH1 = TIM_CHANNEL_1,
-//  .PWM_CH2 = TIM_CHANNEL_2,
-//  .ENC_CH1 = TIM_CHANNEL_1,
-//  .ENC_CH2 = TIM_CHANNEL_2,
-//  .speed = 0,
-//  .pos = 0,
-//  .preSpeed = 0,
-//  .prePos = 0,
-//  .ratio = 33
-//};
+MOTOR_DRIVER_t driver1 = {
+  .htimPWM = &htim8,
+  .htimENC = &htim1,
+  .EncCount = 0,
+  .PWM_CH1 = TIM_CHANNEL_3,
+  .PWM_CH2 = TIM_CHANNEL_4,
+  .ENC_CH1 = TIM_CHANNEL_1,
+  .ENC_CH2 = TIM_CHANNEL_2,
+  .speed = 0,
+  .pos = 0,
+  .preSpeed = 0,
+  .prePos = 0,
+  .ratio = 33
+ };
+MOTOR_DRIVER_t driver2 = {
+  .htimPWM = &htim4,
+  .htimENC = &htim2,
+  .EncCount = 0,
+  .PWM_CH1 = TIM_CHANNEL_3,
+  .PWM_CH2 = TIM_CHANNEL_4,
+  .ENC_CH1 = TIM_CHANNEL_1,
+  .ENC_CH2 = TIM_CHANNEL_2,
+  .speed = 0,
+  .pos = 0,
+  .preSpeed = 0,
+  .prePos = 0,
+  .ratio = 33
+};
+MOTOR_DRIVER_t driver3 = {
+  .htimPWM = &htim4,
+  .htimENC = &htim3,
+  .EncCount = 0,
+  .PWM_CH1 = TIM_CHANNEL_1,
+  .PWM_CH2 = TIM_CHANNEL_2,
+  .ENC_CH1 = TIM_CHANNEL_1,
+  .ENC_CH2 = TIM_CHANNEL_2,
+  .speed = 0,
+  .pos = 0,
+  .preSpeed = 0,
+  .prePos = 0,
+  .ratio = 33
+};
+MOTOR_DRIVER_t driver4 = {
+  .htimPWM = &htim9,
+  .htimENC = &htim5,
+  .EncCount = 0,
+  .PWM_CH1 = TIM_CHANNEL_2,
+  .PWM_CH2 = TIM_CHANNEL_1,
+  .ENC_CH1 = TIM_CHANNEL_1,
+  .ENC_CH2 = TIM_CHANNEL_2,
+  .speed = 0,
+  .pos = 0,
+  .preSpeed = 0,
+  .prePos = 0,
+  .ratio = 5.5
+};
 
 /* USER CODE END PV */
 
@@ -230,30 +230,55 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t Size)
 }
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 {
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_6);
-  static uint8_t mode = 0;
-  switch (mode)
-  {
-  case 0:
-    MOTOR_runAngle(&motor1);
-    mode = 1;
-    break;
-  case 1:
-    MOTOR_runAngle(&motor2);
-    mode = 2;
-    break;
-  case 2:
-    MOTOR_runAngle(&motor3);
-    mode = 3;
-    break;
-  case 3:
-    MOTOR_runAngle(&motor4);
-    mode = 0;
-    break;
-  default:
-    break;
-  }
+	if(htim == &htim9)
+	{
+	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+//	  MOTOR_runAngle(&motor3);
+	  static uint8_t mode = 0;
+	  switch (mode)
+	  {
+	  case 0:
+		MOTOR_runAngle(&motor1);
+		mode = 1;
+		break;
+	  case 1:
+		MOTOR_runAngle(&motor2);
+		mode = 2;
+		break;
+	  case 2:
+		MOTOR_runAngle(&motor3);
+		mode = 3;
+		break;
+	  case 3:
+		MOTOR_runAngle(&motor4);
+		mode = 4;
+		break;
+	  case 4:
+		mode = 0;
+		break;
+	  default:
+		break;
+	  }
+	}
+}
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if(GPIO_Pin == GPIO_PIN_7)
+	{
+		Pin_interrupt = 7;
+	}
+	else if(GPIO_Pin == GPIO_PIN_11)
+	{
+		Pin_interrupt = 11;
+	}
+	else if(GPIO_Pin == GPIO_PIN_2)
+	{
+		Pin_interrupt = 2;
+	}
+	else if(GPIO_Pin == GPIO_PIN_6)
+	{
+		Pin_interrupt = 6;
+	}
 }
 /* USER CODE END 0 */
 
@@ -295,32 +320,37 @@ int main(void)
   MX_TIM9_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-  UartIdle_Init();
-  MOTOR_setPIDPosition(&motor1, 1, 0, 0, 4);
-  MOTOR_setPIDVelocity(&motor1, 1, 200, 0, 4);
+//  MOTOR_driver_setupPWM(&driver1, &htim8, TIM_CHANNEL_3, TIM_CHANNEL_4);
+//  MOTOR_driver_setupENCODER(&driver1, &htim1, TIM_CHANNEL_1, TIM_CHANNEL_2);
+//  MOTOR_driver_setRatio(&driver1, 270);
+
+  MOTOR_setPIDPosition(&motor1, 2, 0, 0.1, 5);
+  MOTOR_setPIDVelocity(&motor1, 1, 100, 0, 5);
   MOTOR_setOutputRange(&motor1, -999, 999);
   MOTOR_setWindupRange(&motor1, -500, 500);
-  MOTOR_init(&motor1, &driver1, 33.0, GPIO_PIN_6);
+  MOTOR_init(&motor1, &driver1, 3.75, GPIO_PIN_7, 500);
 
-  MOTOR_setPIDPosition(&motor2, 1, 0, 0, 4);
-  MOTOR_setPIDVelocity(&motor2, 1, 200, 0, 4);
+  MOTOR_setPIDPosition(&motor2, 2, 0, 0.1, 5);
+  MOTOR_setPIDVelocity(&motor2, 1, 100, 0, 5);
   MOTOR_setOutputRange(&motor2, -999, 999);
   MOTOR_setWindupRange(&motor2, -500, 500);
-  MOTOR_init(&motor2, &driver2, 33.0, GPIO_PIN_6);
+  MOTOR_init(&motor2, &driver2, 3.75, GPIO_PIN_11, 500);
 
-  MOTOR_setPIDPosition(&motor3, 1, 0, 0, 4);
-  MOTOR_setPIDVelocity(&motor3, 1, 200, 0, 4);
+  MOTOR_setPIDPosition(&motor3, 2, 0, 0.1, 5);
+  MOTOR_setPIDVelocity(&motor3, 1, 100, 0, 5);
   MOTOR_setOutputRange(&motor3, -999, 999);
   MOTOR_setWindupRange(&motor3, -500, 500);
-  MOTOR_init(&motor3, &driver3, 33.0, GPIO_PIN_6);
+  MOTOR_init(&motor3, &driver3, 3.75, GPIO_PIN_2, 500);
 
-  MOTOR_setPIDPosition(&motor4, 1, 0, 0, 4);
-  MOTOR_setPIDVelocity(&motor4, 1, 200, 0, 4);
+  MOTOR_setPIDPosition(&motor4, 8, 0, 0, 5);
+  MOTOR_setPIDVelocity(&motor4, 3, 50, 0, 5);
   MOTOR_setOutputRange(&motor4, -999, 999);
   MOTOR_setWindupRange(&motor4, -500, 500);
-  MOTOR_init(&motor4, &driver4, 33.0, GPIO_PIN_6);
+  MOTOR_init(&motor4, &driver4, 1.875, GPIO_PIN_6, 500);
 
   HAL_TIM_Base_Start_IT(&htim9);
+  htim9.Instance->ARR = 999;
+  UartIdle_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -328,9 +358,11 @@ int main(void)
   while (1)
   {
     UART_Handle(uartLogBuffer);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
   }
   /* USER CODE END 3 */
 }
@@ -341,8 +373,8 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
   */
@@ -368,8 +400,8 @@ void SystemClock_Config(void)
 
   /** Initializes the CPU, AHB and APB buses clocks
   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-    | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
@@ -393,8 +425,8 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 0 */
 
-  TIM_Encoder_InitTypeDef sConfig = { 0 };
-  TIM_MasterConfigTypeDef sMasterConfig = { 0 };
+  TIM_Encoder_InitTypeDef sConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
 
   /* USER CODE BEGIN TIM1_Init 1 */
 
@@ -443,8 +475,8 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 0 */
 
-  TIM_Encoder_InitTypeDef sConfig = { 0 };
-  TIM_MasterConfigTypeDef sMasterConfig = { 0 };
+  TIM_Encoder_InitTypeDef sConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
 
   /* USER CODE BEGIN TIM2_Init 1 */
 
@@ -492,8 +524,8 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 0 */
 
-  TIM_Encoder_InitTypeDef sConfig = { 0 };
-  TIM_MasterConfigTypeDef sMasterConfig = { 0 };
+  TIM_Encoder_InitTypeDef sConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
 
   /* USER CODE BEGIN TIM3_Init 1 */
 
@@ -541,15 +573,15 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 0 */
 
-  TIM_ClockConfigTypeDef sClockSourceConfig = { 0 };
-  TIM_MasterConfigTypeDef sMasterConfig = { 0 };
-  TIM_OC_InitTypeDef sConfigOC = { 0 };
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
 
   /* USER CODE BEGIN TIM4_Init 1 */
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 84 - 1;
+  htim4.Init.Prescaler = 84-1;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 999;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -612,8 +644,8 @@ static void MX_TIM5_Init(void)
 
   /* USER CODE END TIM5_Init 0 */
 
-  TIM_Encoder_InitTypeDef sConfig = { 0 };
-  TIM_MasterConfigTypeDef sMasterConfig = { 0 };
+  TIM_Encoder_InitTypeDef sConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
 
   /* USER CODE BEGIN TIM5_Init 1 */
 
@@ -661,16 +693,16 @@ static void MX_TIM8_Init(void)
 
   /* USER CODE END TIM8_Init 0 */
 
-  TIM_ClockConfigTypeDef sClockSourceConfig = { 0 };
-  TIM_MasterConfigTypeDef sMasterConfig = { 0 };
-  TIM_OC_InitTypeDef sConfigOC = { 0 };
-  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = { 0 };
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
 
   /* USER CODE BEGIN TIM8_Init 1 */
 
   /* USER CODE END TIM8_Init 1 */
   htim8.Instance = TIM8;
-  htim8.Init.Prescaler = 168 - 1;
+  htim8.Init.Prescaler = 168-1;
   htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim8.Init.Period = 999;
   htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -740,14 +772,14 @@ static void MX_TIM9_Init(void)
 
   /* USER CODE END TIM9_Init 0 */
 
-  TIM_ClockConfigTypeDef sClockSourceConfig = { 0 };
-  TIM_OC_InitTypeDef sConfigOC = { 0 };
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
 
   /* USER CODE BEGIN TIM9_Init 1 */
 
   /* USER CODE END TIM9_Init 1 */
   htim9.Instance = TIM9;
-  htim9.Init.Prescaler = 168 - 1;
+  htim9.Init.Prescaler = 168-1;
   htim9.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim9.Init.Period = 999;
   htim9.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -840,11 +872,11 @@ static void MX_DMA_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
-  GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-  /* USER CODE BEGIN MX_GPIO_Init_1 */
-  /* USER CODE END MX_GPIO_Init_1 */
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+/* USER CODE BEGIN MX_GPIO_Init_1 */
+/* USER CODE END MX_GPIO_Init_1 */
 
-    /* GPIO Ports Clock Enable */
+  /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
@@ -863,6 +895,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : PC7 PC11 */
+  GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_11;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PD2 PD6 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_6;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
   /*Configure GPIO pin : PB6 */
   GPIO_InitStruct.Pin = GPIO_PIN_6;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -870,8 +914,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /* USER CODE BEGIN MX_GPIO_Init_2 */
-  /* USER CODE END MX_GPIO_Init_2 */
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI2_IRQn, 1, 0);
+  HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 1, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 1, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+/* USER CODE BEGIN MX_GPIO_Init_2 */
+/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -901,11 +955,11 @@ void Error_Handler(void)
   * @param  line: assert_param error line source number
   * @retval None
   */
-void assert_failed(uint8_t* file, uint32_t line)
+void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-     /* USER CODE END 6 */
+  /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

@@ -50,10 +50,10 @@ float PID_compute(PID_TypeDef* pid, float Error)
 	else if (pid->ITerm < pid->WindupMin) pid->ITerm = pid->WindupMin;
 
 	pid->Delta_error = Error - pid->Last_error;
-	pid->DTerm = pid->Delta_error / (pid->Sample_time / 1000.0);
+	pid->DTerm = pid->Kd * pid->Delta_error / (pid->Sample_time / 1000.0);
 	pid->Last_error = Error;
 
-	pid->Output = pid->PTerm + pid->ITerm + pid->Kd * pid->DTerm;
+	pid->Output = pid->PTerm + pid->ITerm + pid->DTerm;
 	if (pid->Output > pid->OutMax)
 	{
 		pid->FeedbackWindup = pid->Output - pid->OutMax;
