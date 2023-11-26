@@ -3,4 +3,4 @@
 ../MOTOR_DRIVER/MOTOR_DRIVER.c:25:6:MOTOR_driver_rotary	16	static
 ../MOTOR_DRIVER/MOTOR_DRIVER.c:38:6:MOTOR_driver_readPosAndSpeed	40	static
 ../MOTOR_DRIVER/MOTOR_DRIVER.c:47:6:MOTOR_driver_reset	16	static
-../MOTOR_DRIVER/MOTOR_DRIVER.c:55:6:MOTOR_driver_setRatio	16	static
+../MOTOR_DRIVER/MOTOR_DRIVER.c:56:6:MOTOR_driver_setRatio	16	static

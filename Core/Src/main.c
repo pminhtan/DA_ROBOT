@@ -24,6 +24,7 @@
 #include "MOTOR_PID_CONTROL.h"
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,12 +61,18 @@ char uartLogBuffer[MAX_MESG];
 uint8_t flag_uart_rx = 0;
 uint16_t uartLogRxSize;
 float t1, t2, t3, t4;
-uint8_t Pin_interrupt = 0;
-//MOTOR_DRIVER_t driver1;
-//MOTOR_DRIVER_t driver2;
-//MOTOR_DRIVER_t driver3;
-//MOTOR_DRIVER_t driver4;
-
+uint8_t setHomeOk = 0;
+uint8_t setHomeJ1 = 0, setHomeJ2 = 0, setHomeJ3 = 0, setHomeJ4 = 0;
+typedef enum
+{
+	step1,
+	step2,
+	step3,
+	step4
+} setHomeState_e;
+setHomeState_e flagState = step1;
+uint8_t setHome234Flag = 0;
+uint8_t setHome1234Flag = 0;
 MOTOR_t motor1;
 MOTOR_t motor2;
 MOTOR_t motor3;
@@ -75,8 +82,8 @@ MOTOR_DRIVER_t driver1 = {
   .htimPWM = &htim8,
   .htimENC = &htim1,
   .EncCount = 0,
-  .PWM_CH1 = TIM_CHANNEL_3,
-  .PWM_CH2 = TIM_CHANNEL_4,
+  .PWM_CH1 = TIM_CHANNEL_4,
+  .PWM_CH2 = TIM_CHANNEL_3,
   .ENC_CH1 = TIM_CHANNEL_1,
   .ENC_CH2 = TIM_CHANNEL_2,
   .speed = 0,
@@ -89,8 +96,8 @@ MOTOR_DRIVER_t driver2 = {
   .htimPWM = &htim4,
   .htimENC = &htim2,
   .EncCount = 0,
-  .PWM_CH1 = TIM_CHANNEL_3,
-  .PWM_CH2 = TIM_CHANNEL_4,
+  .PWM_CH1 = TIM_CHANNEL_4,
+  .PWM_CH2 = TIM_CHANNEL_3,
   .ENC_CH1 = TIM_CHANNEL_1,
   .ENC_CH2 = TIM_CHANNEL_2,
   .speed = 0,
@@ -160,58 +167,20 @@ void UART_Handle(char* data)
       MOTOR_setAngle(&motor2, t2);
       MOTOR_setAngle(&motor3, t3);
       MOTOR_setAngle(&motor4, t4);
-      memset(data, 0, strlen(data));
     }
-    // else if (strstr(data, "hut"))
-    // {
-    //   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 1);
-    //   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, 0);
-    //   memset(data, 0, strlen(data));
-    // }
-    // else if (strstr(data, "nha"))
-    // {
-    //   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 0);
-    //   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, 1);
-    //   HAL_Delay(5);
-    //   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, 0);
-    //   memset(data, 0, strlen(data));
-    // }
-    // else if (strstr(data, "home"))
-    // {
-
-    //   if (BaseMotor.checkSetHomeFlag == 0)
-    //   {
-    //     MOTOR_setAngle(&BaseMotor, 100);
-    //   }
-    //   else
-    //   {
-    //     MOTOR_setAngle(&BaseMotor, 0);
-    //     BaseMotor.startSetHomeFlag = 0;
-    //   }
-    //   /////////////////////////////////////////////////////////////////
-    //   if (Joint2.checkSetHomeFlag == 0)
-    //   {
-    //     MOTOR_setAngle(&Joint2, -20);
-    //   }
-    //   else
-    //   {
-    //     MOTOR_setAngle(&Joint2, 0);
-    //     Joint2.startSetHomeFlag = 0;
-    //   }
-    //   ////////////////////////////////////////////////////////////////
-    //   if (Joint3.checkSetHomeFlag == 0)
-    //   {
-    //     MOTOR_setAngle(&Joint3, 10);
-    //   }
-    //   else
-    //   {
-    //     MOTOR_setAngle(&Joint3, 0);
-    //     Joint3.startSetHomeFlag = 0;
-    //   }
-    //   memset(data, 0, strlen(data));
-    // }
+    else if (strstr(data, "home"))
+	{
+    	setHome234Flag = 1;
+    	setHome1234Flag = 1;
+    	setHomeJ1 = setHomeJ2 = setHomeJ3 = setHomeJ4 = 0;
+    	MOTOR_setAngle(&motor2, 300);
+	}
+    else if(strstr(data,"Reset"))
+	{
+    	HAL_NVIC_SystemReset();
+	}
     flag_uart_rx = 0;
-    memset(data, 0, strlen(data));
+	memset(data, 0, strlen(data));
   }
 }
 void UartIdle_Init()
@@ -233,7 +202,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 	if(htim == &htim9)
 	{
 	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-//	  MOTOR_runAngle(&motor3);
 	  static uint8_t mode = 0;
 	  switch (mode)
 	  {
@@ -261,23 +229,109 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 	  }
 	}
 }
+
+void SetHome(void)
+{
+	if(setHome1234Flag == 1 && setHomeOk == 0)
+	{
+		if (setHomeJ1 == 1 && setHomeJ2 == 1 && setHomeJ3 == 1 && setHomeJ4 == 1)
+		{
+			MOTOR_setAngle(&motor1, 0);
+			MOTOR_setAngle(&motor2, -180);
+			MOTOR_setAngle(&motor3, 130);
+			MOTOR_setAngle(&motor4, -75);
+			if(fabs(MOTOR_getPos(&motor2) + 180) < 1 && fabs(MOTOR_getPos(&motor3) - 130) < 1 && fabs(MOTOR_getPos(&motor4) + 75) < 1)
+			{
+				setHome234Flag = 0;
+				setHome1234Flag = 0;
+				setHomeOk = 1;
+				MOTOR_reset(&motor2);
+				MOTOR_reset(&motor3);
+				MOTOR_reset(&motor4);
+			}
+		}
+		else if(setHomeJ2 == 1 && setHomeJ3 == 1 && setHomeJ4 == 1)
+		{
+			if(fabs(motor1.setPoint) <= 2)
+			{
+				MOTOR_setAngle(&motor1, -45.0f);
+			}
+			else if(fabs(MOTOR_getPos(&motor1) + 45.0f) < 2 && (int)(motor1.setPoint / motor1.ratioJoint) == -45)
+			{
+				MOTOR_setAngle(&motor1, 45.0f);
+			}
+			else if(fabs(MOTOR_getPos(&motor1) - 45.0f) < 2 && (int)(motor1.setPoint / motor1.ratioJoint) == 45)
+			{
+				MOTOR_setAngle(&motor1, -100.0f);
+			}
+			else if(fabs(MOTOR_getPos(&motor1) + 100.0f) < 2)
+			{
+				MOTOR_setAngle(&motor1, 100.0f);
+			}
+		}
+		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_7) == 1 && setHomeJ1 == 0)
+		{
+			setHomeJ1 = 1;
+			MOTOR_reset(&motor1);
+		}
+		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_11) == 1 && setHomeJ2 == 0)
+		{
+			setHomeJ2 = 1;
+			MOTOR_reset(&motor2);
+		}
+		if(HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_2) == 0 && setHomeJ3 == 0)
+		{
+			setHomeJ3 = 1;
+			MOTOR_reset(&motor3);
+		}
+		if(HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_6) == 0 && setHomeJ4 == 0)
+		{
+			setHomeJ4 = 1;
+			MOTOR_reset(&motor4);
+		}
+	}
+	else if(setHome1234Flag == 1 && setHomeOk == 1)
+	{
+		MOTOR_setAngle(&motor1, 0);
+		MOTOR_setAngle(&motor2, 0);
+		MOTOR_setAngle(&motor3, 0);
+		MOTOR_setAngle(&motor4, 0);
+		setHome1234Flag = 0;
+	}
+}
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if(GPIO_Pin == GPIO_PIN_7)
+	if(setHome1234Flag == 1 && setHomeOk == 0)
 	{
-		Pin_interrupt = 7;
-	}
-	else if(GPIO_Pin == GPIO_PIN_11)
-	{
-		Pin_interrupt = 11;
-	}
-	else if(GPIO_Pin == GPIO_PIN_2)
-	{
-		Pin_interrupt = 2;
-	}
-	else if(GPIO_Pin == GPIO_PIN_6)
-	{
-		Pin_interrupt = 6;
+		if(GPIO_Pin == GPIO_PIN_11 && setHomeJ2 == 0)
+		{
+			setHomeJ2 = 1;
+			MOTOR_reset(&motor2);
+			if(setHomeJ3 == 0)
+			{
+				MOTOR_setAngle(&motor3, -200);
+			}
+			if(setHomeJ4 == 0)
+			{
+				MOTOR_setAngle(&motor4, 200);
+			}
+		}
+		else if(GPIO_Pin == GPIO_PIN_2 && setHomeJ3 == 0)
+		{
+			setHomeJ3 = 1;
+			MOTOR_reset(&motor3);
+
+		}
+		else if(GPIO_Pin == GPIO_PIN_6 && setHomeJ4 == 0)
+		{
+			setHomeJ4 = 1;
+			MOTOR_reset(&motor4);
+		}
+		else if(GPIO_Pin == GPIO_PIN_7 && setHomeJ1 == 0)
+		{
+			setHomeJ1 = 1;
+			MOTOR_reset(&motor1);
+		}
 	}
 }
 /* USER CODE END 0 */
@@ -320,37 +374,38 @@ int main(void)
   MX_TIM9_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-//  MOTOR_driver_setupPWM(&driver1, &htim8, TIM_CHANNEL_3, TIM_CHANNEL_4);
-//  MOTOR_driver_setupENCODER(&driver1, &htim1, TIM_CHANNEL_1, TIM_CHANNEL_2);
-//  MOTOR_driver_setRatio(&driver1, 270);
 
-  MOTOR_setPIDPosition(&motor1, 2, 0, 0.1, 5);
-  MOTOR_setPIDVelocity(&motor1, 1, 100, 0, 5);
+  MOTOR_setPIDPosition(&motor1, 5, 0, 0, 5);
+  MOTOR_setPIDVelocity(&motor1, 5, 50, 0, 5);
   MOTOR_setOutputRange(&motor1, -999, 999);
   MOTOR_setWindupRange(&motor1, -500, 500);
   MOTOR_init(&motor1, &driver1, 3.75, GPIO_PIN_7, 500);
 
-  MOTOR_setPIDPosition(&motor2, 2, 0, 0.1, 5);
-  MOTOR_setPIDVelocity(&motor2, 1, 100, 0, 5);
+  MOTOR_setPIDPosition(&motor2, 5, 0, 0, 5);
+  MOTOR_setPIDVelocity(&motor2, 5, 50, 0, 5);
   MOTOR_setOutputRange(&motor2, -999, 999);
   MOTOR_setWindupRange(&motor2, -500, 500);
   MOTOR_init(&motor2, &driver2, 3.75, GPIO_PIN_11, 500);
 
-  MOTOR_setPIDPosition(&motor3, 2, 0, 0.1, 5);
-  MOTOR_setPIDVelocity(&motor3, 1, 100, 0, 5);
+  MOTOR_setPIDPosition(&motor3, 5, 0, 0, 5);
+  MOTOR_setPIDVelocity(&motor3, 5, 50, 0, 5);
   MOTOR_setOutputRange(&motor3, -999, 999);
   MOTOR_setWindupRange(&motor3, -500, 500);
   MOTOR_init(&motor3, &driver3, 3.75, GPIO_PIN_2, 500);
 
-  MOTOR_setPIDPosition(&motor4, 8, 0, 0, 5);
-  MOTOR_setPIDVelocity(&motor4, 3, 50, 0, 5);
+  MOTOR_setPIDPosition(&motor4, 5, 0, 0, 5);
+  MOTOR_setPIDVelocity(&motor4, 5, 50, 0, 5);
   MOTOR_setOutputRange(&motor4, -999, 999);
   MOTOR_setWindupRange(&motor4, -500, 500);
   MOTOR_init(&motor4, &driver4, 1.875, GPIO_PIN_6, 500);
 
+
   HAL_TIM_Base_Start_IT(&htim9);
   htim9.Instance->ARR = 999;
   UartIdle_Init();
+
+  uint32_t pre_time = HAL_GetTick();
+  char data_angle[30];
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -358,7 +413,14 @@ int main(void)
   while (1)
   {
     UART_Handle(uartLogBuffer);
+    SetHome();
+    if (HAL_GetTick() - pre_time >= 500)
+    {
+      sprintf(data_angle, "t1:%.0f,t2:%.0f,t3:%.0f,t4:%.0f\n", (float)MOTOR_getPos(&motor1), (float)MOTOR_getPos(&motor2), (float)MOTOR_getPos(&motor3), (float)MOTOR_getPos(&motor4));
+      HAL_UART_Transmit(&huart3, (uint8_t*)data_angle, strlen(data_angle), HAL_MAX_DELAY);
 
+      pre_time = HAL_GetTick();
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -832,7 +894,7 @@ static void MX_USART3_UART_Init(void)
 
   /* USER CODE END USART3_Init 1 */
   huart3.Instance = USART3;
-  huart3.Init.BaudRate = 115200;
+  huart3.Init.BaudRate = 250000;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
@@ -860,7 +922,7 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Stream1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 3, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
 
 }
@@ -895,16 +957,16 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PC7 PC11 */
-  GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_11;
+  /*Configure GPIO pins : PC7 PC10 PC11 */
+  GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_10|GPIO_PIN_11;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PD2 PD6 */
   GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_6;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB6 */

@@ -33,5 +33,5 @@ void MOTOR_setWindupRange(MOTOR_t* motor, float OutMin, float OutMax);
 void MOTOR_setOutputRange(MOTOR_t* motor, float OutMin, float OutMax);
 void MOTOR_runAngle(MOTOR_t* motor);
 void MOTOR_init(MOTOR_t* motor, MOTOR_DRIVER_t* motorDriver, float ratio, uint16_t pinSetHome, float limitPos);
-
+float MOTOR_getPos(MOTOR_t* motor);
 #endif /* MOTOR_PID_CONTROL_H_ */

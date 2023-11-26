@@ -46,6 +46,7 @@ void MOTOR_driver_readPosAndSpeed(MOTOR_DRIVER_t* motor, float* pos, float* spee
 }
 void MOTOR_driver_reset(MOTOR_DRIVER_t* motor)
 {
+	motor->EncCount = 0;
     motor->pos = 0;
     motor->prePos = 0;
     motor->speed = 0;

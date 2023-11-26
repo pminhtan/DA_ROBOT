@@ -76,6 +76,11 @@ void MOTOR_reset(MOTOR_t* motor)
     motor->preError = 0;
     motor->pos = 0;
     motor->speed = 0;
+    MOTOR_driver_reset(motor->motorDriver);
     PID_clear(&motor->PIDPosition);
     PID_clear(&motor->PIDVelocity);
+}
+float MOTOR_getPos(MOTOR_t* motor)
+{
+	return motor->pos/motor->ratioJoint;
 }
