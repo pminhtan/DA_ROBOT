@@ -15,7 +15,7 @@ void MOTOR_setPIDPosition(MOTOR_t* motor, float Kp, float Ki, float Kd, float Ts
 }
 void MOTOR_setOutputRange(MOTOR_t* motor, float OutMin, float OutMax)
 {
-    PID_setOutputRange(&motor->PIDPosition, -500, 500);
+    PID_setOutputRange(&motor->PIDPosition, -900, 900);
     PID_setOutputRange(&motor->PIDVelocity, OutMin, OutMax);
 }
 void MOTOR_setWindupRange(MOTOR_t* motor, float OutMin, float OutMax)
@@ -29,12 +29,13 @@ void MOTOR_setAngle(MOTOR_t* motor, float setAngle)
 }
 void MOTOR_runAngle(MOTOR_t* motor)
 {
-    if (motor->setPoint != motor->preSetPoint)
-    {
-        PID_clear(&motor->PIDPosition);
-        PID_clear(&motor->PIDVelocity);
-        motor->preSetPoint = motor->setPoint;
-    }
+//    if (motor->setPoint != motor->preSetPoint)
+//    {
+//        PID_clear(&motor->PIDPosition);
+//        PID_clear(&motor->PIDVelocity);
+//        motor->preSetPoint = motor->setPoint;
+//    }
+
     MOTOR_driver_readPosAndSpeed(motor->motorDriver, &motor->pos, &motor->speed, motor->PIDPosition.Sample_time);
     motor->error = motor->setPoint - motor->pos;
 //    motor->error = motor->setPoint;
@@ -83,4 +84,8 @@ void MOTOR_reset(MOTOR_t* motor)
 float MOTOR_getPos(MOTOR_t* motor)
 {
 	return motor->pos/motor->ratioJoint;
+}
+static float p(float p0, float pf, float tf, float v0, float vf, float T)
+{
+    return p0+v0*T+(3*(pf-p0)/(tf*tf)-2*v0/tf-vf/tf)*(T*T)+(-2*(pf-p0)/(tf*tf*tf)+(vf+v0)/(tf*tf))*(T*T*T);
 }

@@ -132,7 +132,7 @@ MOTOR_DRIVER_t driver4 = {
   .pos = 0,
   .preSpeed = 0,
   .prePos = 0,
-  .ratio = 5.5
+  .ratio = 4.34
 };
 
 /* USER CODE END PV */
@@ -155,6 +155,10 @@ static void MX_USART3_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+float T1, T2, T3, T4, Tf=2000;
+float setpoint1, setpoint2, setpoint3, setpoint4;
+float preSetpoint1, preSetpoint2, preSetpoint3, preSetpoint4;
+float p0_1=0, p0_2=0, p0_3=0, p0_4=0;
 
 void UART_Handle(char* data)
 {
@@ -162,18 +166,19 @@ void UART_Handle(char* data)
   {
     if (strstr(data, "t1"))
     {
-      sscanf(data, "t1:%f,t2:%f,t3:%f,t4:%f\n", &t1, &t2, &t3, &t4);
-      MOTOR_setAngle(&motor1, t1);
-      MOTOR_setAngle(&motor2, t2);
-      MOTOR_setAngle(&motor3, t3);
-      MOTOR_setAngle(&motor4, t4);
+    	sscanf(data, "t1:%f,t2:%f,t3:%f,t4:%f\n", &setpoint1, &setpoint2, &setpoint3, &setpoint4);
+//      sscanf(data, "t1:%f,t2:%f,t3:%f,t4:%f\n", &t1, &t2, &t3, &t4);
+//      MOTOR_setAngle(&motor1, t1);
+//      MOTOR_setAngle(&motor2, t2);
+//      MOTOR_setAngle(&motor3, t3);
+//      MOTOR_setAngle(&motor4, t4);
     }
     else if (strstr(data, "home"))
 	{
     	setHome234Flag = 1;
     	setHome1234Flag = 1;
     	setHomeJ1 = setHomeJ2 = setHomeJ3 = setHomeJ4 = 0;
-    	MOTOR_setAngle(&motor2, 300);
+    	if(setHomeOk == 0) MOTOR_setAngle(&motor2, 300);
 	}
     else if(strstr(data,"Reset"))
 	{
@@ -197,6 +202,12 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t Size)
     HAL_UARTEx_ReceiveToIdle_DMA(huart, (uint8_t*)uartLogBuffer, MAX_MESG);
   }
 }
+
+float p(float p0, float pf, float tf, float v0, float vf, float T)
+{
+    return p0+v0*T+(3*(pf-p0)/(tf*tf)-2*v0/tf-vf/tf)*(T*T)+(-2*(pf-p0)/(tf*tf*tf)+(vf+v0)/(tf*tf))*(T*T*T);
+}
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 {
 	if(htim == &htim9)
@@ -206,22 +217,66 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 	  switch (mode)
 	  {
 	  case 0:
+		if(T1 <= Tf)
+		{
+			T1 += 5;
+			MOTOR_setAngle(&motor1, p(p0_1, setpoint1, Tf, 0, 0, T1));
+		}
 		MOTOR_runAngle(&motor1);
 		mode = 1;
 		break;
 	  case 1:
+		if(T2 <= Tf)
+		{
+			T2 += 5;
+			MOTOR_setAngle(&motor2, p(p0_2, setpoint2, Tf, 0, 0, T2));
+		}
 		MOTOR_runAngle(&motor2);
 		mode = 2;
 		break;
 	  case 2:
+		if(T3 <= Tf)
+		{
+			T3 += 5;
+			MOTOR_setAngle(&motor3, p(p0_3, setpoint3, Tf, 0, 0, T3));
+		}
 		MOTOR_runAngle(&motor3);
 		mode = 3;
 		break;
 	  case 3:
+		if(T4 <= Tf)
+		{
+			T4 += 5;
+			MOTOR_setAngle(&motor4, p(p0_4, setpoint4, Tf, 0, 0, T4));
+		}
 		MOTOR_runAngle(&motor4);
 		mode = 4;
 		break;
 	  case 4:
+		if(setpoint1 != preSetpoint1)
+		{
+			T1 = 0;
+			p0_1=MOTOR_getPos(&motor1);
+			preSetpoint1 = setpoint1;
+		}
+		if(setpoint2 != preSetpoint2)
+		{
+			T2 = 0;
+			p0_2=MOTOR_getPos(&motor2);
+			preSetpoint2 = setpoint2;
+		}
+		if(setpoint3 != preSetpoint3)
+		{
+			T3 = 0;
+			p0_3=MOTOR_getPos(&motor3);
+			preSetpoint3 = setpoint3;
+		}
+		if(setpoint4 != preSetpoint4)
+		{
+			T4 = 0;
+			p0_4=MOTOR_getPos(&motor4);
+			preSetpoint4 = setpoint4;
+		}
 		mode = 0;
 		break;
 	  default:
@@ -239,8 +294,8 @@ void SetHome(void)
 			MOTOR_setAngle(&motor1, 0);
 			MOTOR_setAngle(&motor2, -180);
 			MOTOR_setAngle(&motor3, 130);
-			MOTOR_setAngle(&motor4, -75);
-			if(fabs(MOTOR_getPos(&motor2) + 180) < 1 && fabs(MOTOR_getPos(&motor3) - 130) < 1 && fabs(MOTOR_getPos(&motor4) + 75) < 1)
+			MOTOR_setAngle(&motor4, -72);
+			if(fabs(MOTOR_getPos(&motor2) + 180) < 1 && fabs(MOTOR_getPos(&motor3) - 130) < 1 && fabs(MOTOR_getPos(&motor4) + 72) < 1)
 			{
 				setHome234Flag = 0;
 				setHome1234Flag = 0;
@@ -292,10 +347,14 @@ void SetHome(void)
 	}
 	else if(setHome1234Flag == 1 && setHomeOk == 1)
 	{
-		MOTOR_setAngle(&motor1, 0);
-		MOTOR_setAngle(&motor2, 0);
-		MOTOR_setAngle(&motor3, 0);
-		MOTOR_setAngle(&motor4, 0);
+//		MOTOR_setAngle(&motor1, 0);
+//		MOTOR_setAngle(&motor2, 0);
+//		MOTOR_setAngle(&motor3, 0);
+//		MOTOR_setAngle(&motor4, 0);
+		setpoint1 = 0;
+		setpoint2 = 0;
+		setpoint3 = 0;
+		setpoint4 = 0;
 		setHome1234Flag = 0;
 	}
 }
@@ -376,27 +435,27 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   MOTOR_setPIDPosition(&motor1, 5, 0, 0, 5);
-  MOTOR_setPIDVelocity(&motor1, 5, 50, 0, 5);
+  MOTOR_setPIDVelocity(&motor1, 1, 60, 0, 5);
   MOTOR_setOutputRange(&motor1, -999, 999);
-  MOTOR_setWindupRange(&motor1, -500, 500);
+  MOTOR_setWindupRange(&motor1, -900, 900);
   MOTOR_init(&motor1, &driver1, 3.75, GPIO_PIN_7, 500);
 
   MOTOR_setPIDPosition(&motor2, 5, 0, 0, 5);
-  MOTOR_setPIDVelocity(&motor2, 5, 50, 0, 5);
+  MOTOR_setPIDVelocity(&motor2, 1, 60, 0, 5);
   MOTOR_setOutputRange(&motor2, -999, 999);
-  MOTOR_setWindupRange(&motor2, -500, 500);
+  MOTOR_setWindupRange(&motor2, -900, 900);
   MOTOR_init(&motor2, &driver2, 3.75, GPIO_PIN_11, 500);
 
   MOTOR_setPIDPosition(&motor3, 5, 0, 0, 5);
-  MOTOR_setPIDVelocity(&motor3, 5, 50, 0, 5);
+  MOTOR_setPIDVelocity(&motor3, 1, 60, 0, 5);
   MOTOR_setOutputRange(&motor3, -999, 999);
-  MOTOR_setWindupRange(&motor3, -500, 500);
+  MOTOR_setWindupRange(&motor3, -900, 900);
   MOTOR_init(&motor3, &driver3, 3.75, GPIO_PIN_2, 500);
 
   MOTOR_setPIDPosition(&motor4, 5, 0, 0, 5);
-  MOTOR_setPIDVelocity(&motor4, 5, 50, 0, 5);
+  MOTOR_setPIDVelocity(&motor4, 1, 50, 0, 5);
   MOTOR_setOutputRange(&motor4, -999, 999);
-  MOTOR_setWindupRange(&motor4, -500, 500);
+  MOTOR_setWindupRange(&motor4, -900, 900);
   MOTOR_init(&motor4, &driver4, 1.875, GPIO_PIN_6, 500);
 
 
