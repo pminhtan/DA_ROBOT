@@ -70,6 +70,7 @@ typedef enum
 	step3,
 	step4
 } setHomeState_e;
+
 setHomeState_e flagState = step1;
 uint8_t setHome234Flag = 0;
 uint8_t setHome1234Flag = 0;
@@ -155,7 +156,8 @@ static void MX_USART3_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-float T1, T2, T3, T4, Tf=2000;
+float T1, T2, T3, T4;
+uint16_t Tf=4000;
 float setpoint1, setpoint2, setpoint3, setpoint4;
 float preSetpoint1, preSetpoint2, preSetpoint3, preSetpoint4;
 float p0_1=0, p0_2=0, p0_3=0, p0_4=0;
@@ -164,28 +166,28 @@ void UART_Handle(char* data)
 {
   if (flag_uart_rx == 1 && strstr(data, "\n"))
   {
-    if (strstr(data, "t1"))
-    {
-    	sscanf(data, "t1:%f,t2:%f,t3:%f,t4:%f\n", &setpoint1, &setpoint2, &setpoint3, &setpoint4);
+	if (strstr(data, "t1"))
+	{
+		sscanf(data, "t1:%f,t2:%f,t3:%f,t4:%f\n", &setpoint1, &setpoint2, &setpoint3, &setpoint4);
 //      sscanf(data, "t1:%f,t2:%f,t3:%f,t4:%f\n", &t1, &t2, &t3, &t4);
 //      MOTOR_setAngle(&motor1, t1);
 //      MOTOR_setAngle(&motor2, t2);
 //      MOTOR_setAngle(&motor3, t3);
 //      MOTOR_setAngle(&motor4, t4);
-    }
-    else if (strstr(data, "home"))
-	{
-    	setHome234Flag = 1;
-    	setHome1234Flag = 1;
-    	setHomeJ1 = setHomeJ2 = setHomeJ3 = setHomeJ4 = 0;
-    	if(setHomeOk == 0) MOTOR_setAngle(&motor2, 300);
 	}
-    else if(strstr(data,"Reset"))
+	else if (strstr(data, "home"))
 	{
-    	HAL_NVIC_SystemReset();
+		setHome234Flag = 1;
+		setHome1234Flag = 1;
+		setHomeJ1 = setHomeJ2 = setHomeJ3 = setHomeJ4 = 0;
+		if(setHomeOk == 0) MOTOR_setAngle(&motor2, 300);
 	}
-    flag_uart_rx = 0;
-	memset(data, 0, strlen(data));
+	else if(strstr(data,"Reset"))
+	{
+		HAL_NVIC_SystemReset();
+	}
+	  flag_uart_rx = 0;
+	  memset(data, 0, strlen(data));
   }
 }
 void UartIdle_Init()
@@ -453,7 +455,7 @@ int main(void)
   MOTOR_init(&motor3, &driver3, 3.75, GPIO_PIN_2, 500);
 
   MOTOR_setPIDPosition(&motor4, 5, 0, 0, 5);
-  MOTOR_setPIDVelocity(&motor4, 1, 50, 0, 5);
+  MOTOR_setPIDVelocity(&motor4, 3, 50, 0, 5);
   MOTOR_setOutputRange(&motor4, -999, 999);
   MOTOR_setWindupRange(&motor4, -900, 900);
   MOTOR_init(&motor4, &driver4, 1.875, GPIO_PIN_6, 500);
@@ -473,7 +475,7 @@ int main(void)
   {
     UART_Handle(uartLogBuffer);
     SetHome();
-    if (HAL_GetTick() - pre_time >= 500)
+    if (HAL_GetTick() - pre_time >= 100)
     {
       sprintf(data_angle, "t1:%.0f,t2:%.0f,t3:%.0f,t4:%.0f\n", (float)MOTOR_getPos(&motor1), (float)MOTOR_getPos(&motor2), (float)MOTOR_getPos(&motor3), (float)MOTOR_getPos(&motor4));
       HAL_UART_Transmit(&huart3, (uint8_t*)data_angle, strlen(data_angle), HAL_MAX_DELAY);
@@ -483,6 +485,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
 
   }
   /* USER CODE END 3 */
@@ -953,7 +956,7 @@ static void MX_USART3_UART_Init(void)
 
   /* USER CODE END USART3_Init 1 */
   huart3.Instance = USART3;
-  huart3.Init.BaudRate = 250000;
+  huart3.Init.BaudRate = 115200;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
